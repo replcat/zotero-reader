@@ -147,6 +147,7 @@ class Reader {
 			autoDisableTextTool: options.autoDisableTextTool !== undefined ? options.autoDisableTextTool : true,
 			autoDisableImageTool: options.autoDisableImageTool !== undefined ? options.autoDisableImageTool : true,
 			textSelectionAnnotationMode: options.textSelectionAnnotationMode || 'highlight',
+			showSelectionPopup: options.showSelectionPopup !== undefined ? options.showSelectionPopup : true,
 			colorScheme: options.colorScheme,
 			tool: this._tools['pointer'], // Must always be a reference to one of this._tools objects
 			thumbnails: [],
@@ -872,7 +873,9 @@ class Reader {
 		};
 
 		let onSetSelectionPopup = (selectionPopup) => {
-			this._updateState({ [primary ? 'primaryViewSelectionPopup' : 'secondaryViewSelectionPopup']: selectionPopup });
+			if (this._state.showSelectionPopup) {
+				this._updateState({ [primary ? 'primaryViewSelectionPopup' : 'secondaryViewSelectionPopup']: selectionPopup });
+			};
 		};
 
 		let onSetAnnotationPopup = (annotationPopup) => {
