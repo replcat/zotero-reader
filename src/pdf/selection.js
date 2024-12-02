@@ -171,25 +171,6 @@ function getRangeByHighlight(chars, rects) {
 	return range;
 }
 
-function getLineSelectionRect(line, charFrom, charTo) {
-	if (charFrom.rotation) {
-		return [
-			line.rect[0],
-			Math.min(charFrom.rect[1], charTo.rect[1]),
-			line.rect[2],
-			Math.max(charFrom.rect[3], charTo.rect[3])
-		];
-	}
-	else {
-		return [
-			Math.min(charFrom.rect[0], charTo.rect[0]),
-			line.rect[1],
-			Math.max(charFrom.rect[2], charTo.rect[2]),
-			line.rect[3]
-		];
-	}
-}
-
 function getRectsFromChars(chars) {
 	let lineRects = [];
 	let currentLineRect = null;
@@ -333,34 +314,35 @@ function getClosestWord(chars, rect) {
 	};
 }
 
-function getClosestLine(chars, rect) {
-	let closestLineStart;
-	let closestLineEnd;
-	let closestLineDistance = null;
+function getClosestParagraph(chars, rect) {
+	let closestParagraphStart;
+	let closestParagraphEnd;
+	let closestParagraphDistance = null;
 	let start = 0;
 	for (let i = 0; i < chars.length; i++) {
 		let char = chars[i];
-		if (char.lineBreakAfter) {
+		// end of paragraph or page
+		if (char.paragraphBreakAfter || i === chars.length - 1) {
 			let end = i;
-			let lineChars = chars.slice(start, end + 1);
-			let lineRect = [
-				Math.min(...lineChars.map(x => x.inlineRect[0])),
-				Math.min(...lineChars.map(x => x.inlineRect[1])),
-				Math.max(...lineChars.map(x => x.inlineRect[2])),
-				Math.max(...lineChars.map(x => x.inlineRect[3])),
+			let paragraphChars = chars.slice(start, end + 1);
+			let paragraphRect = [
+				Math.min(...paragraphChars.map(x => x.inlineRect[0])),
+				Math.min(...paragraphChars.map(x => x.inlineRect[1])),
+				Math.max(...paragraphChars.map(x => x.inlineRect[2])),
+				Math.max(...paragraphChars.map(x => x.inlineRect[3])),
 			];
-			let distance = rectsDist(rect, lineRect);
-			if (closestLineDistance === null || distance < closestLineDistance) {
-				closestLineDistance = distance;
-				closestLineStart = start;
-				closestLineEnd = end;
+			let distance = rectsDist(rect, paragraphRect);
+			if (closestParagraphDistance === null || distance < closestParagraphDistance) {
+				closestParagraphDistance = distance;
+				closestParagraphStart = start;
+				closestParagraphEnd = end;
 			}
 			start = end + 1;
 		}
 	}
 	return {
-		anchorOffset: closestLineStart,
-		headOffset: closestLineEnd + 1
+		anchorOffset: closestParagraphStart,
+		headOffset: closestParagraphEnd + 1
 	};
 }
 
@@ -536,27 +518,27 @@ export function getWordSelectionRanges(pdfPages, anchorPosition, headPosition) {
 	return getSelectionRanges(pdfPages, anchor, head);
 }
 
-export function getLineSelectionRanges(pdfPages, anchorPosition, headPosition) {
+export function getParagraphSelectionRanges(pdfPages, anchorPosition, headPosition) {
 	if (!pdfPages[anchorPosition.pageIndex]) {
 		return [];
 	}
 	let { chars } = pdfPages[anchorPosition.pageIndex];
-	let anchorLine = getClosestLine(chars, anchorPosition.rects[0]);
+	let anchorParagraph = getClosestParagraph(chars, anchorPosition.rects[0]);
 	chars = pdfPages[headPosition.pageIndex].chars;
-	let headLine = getClosestLine(chars, headPosition.rects[0]);
-	if (!anchorLine || !headLine) {
+	let headParagraph = getClosestParagraph(chars, headPosition.rects[0]);
+	if (!anchorParagraph || !headParagraph) {
 		return [];
 	}
 	let anchor = { pageIndex: anchorPosition.pageIndex };
 	let head = { pageIndex: headPosition.pageIndex };
-	if (anchorLine.anchorOffset <= headLine.anchorOffset && anchor.pageIndex === head.pageIndex
+	if (anchorParagraph.anchorOffset <= headParagraph.anchorOffset && anchor.pageIndex === head.pageIndex
 		|| anchor.pageIndex < head.pageIndex) {
-		anchor.offset = anchorLine.anchorOffset;
-		head.offset = headLine.headOffset;
+		anchor.offset = anchorParagraph.anchorOffset;
+		head.offset = headParagraph.headOffset;
 	}
 	else {
-		anchor.offset = anchorLine.headOffset;
-		head.offset = headLine.anchorOffset;
+		anchor.offset = anchorParagraph.headOffset;
+		head.offset = headParagraph.anchorOffset;
 	}
 	return getSelectionRanges(pdfPages, anchor, head);
 }

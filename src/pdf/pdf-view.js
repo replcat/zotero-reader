@@ -1,8 +1,8 @@
 import Page from './page';
 import { p2v, v2p } from './lib/coordinates';
 import {
-	getLineSelectionRanges,
 	getModifiedSelectionRanges,
+	getParagraphSelectionRanges,
 	getRectRotationOnText,
 	getReversedSelectionRanges,
 	getSelectionRanges,
@@ -1842,8 +1842,8 @@ class PDFView {
 				this.action.mode = 'words';
 			}
 			else if (event.detail === 3) {
-				this._selectionRanges = getLineSelectionRanges(this._pdfPages, position, position);
-				this.action.mode = 'lines';
+				this._selectionRanges = getParagraphSelectionRanges(this._pdfPages, position, position);
+				this.action.mode = 'paragraphs';
 			}
 			if (this._selectionRanges.length && !this._selectionRanges[0].collapsed) {
 				action.triggered = true;
@@ -2160,8 +2160,8 @@ class PDFView {
 			else if (action.mode === 'words') {
 				this._selectionRanges = getWordSelectionRanges(this._pdfPages, this.pointerDownPosition, position);
 			}
-			else if (action.mode === 'lines') {
-				this._selectionRanges = getLineSelectionRanges(this._pdfPages, this.pointerDownPosition, position);
+			else if (action.mode === 'paragraphs') {
+				this._selectionRanges = getParagraphSelectionRanges(this._pdfPages, this.pointerDownPosition, position);
 			}
 			if (this._selectionRanges.length && !this._selectionRanges[0].collapsed) {
 				action.triggered = true;
